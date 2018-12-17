@@ -83,7 +83,6 @@ public class NSPUSBSender implements SenderCallback {
     private void setNspFolder(){
         try{
             String nspPath = Environment.getExternalStorageDirectory().getCanonicalPath()+"/nsp";
-            log("nsp path is: "+nspPath);
             nspFolder = new File(nspPath);
         }catch (Exception e){
             log(e.toString());
