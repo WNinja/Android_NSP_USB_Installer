@@ -35,14 +35,15 @@ public class NSPUSBSender implements SenderCallback {
     private UsbEndpoint usbInPoint,usbOutPoint;
 
     private nspActivityCallback nspCallback;
-    private File nspDir = null;
+    private File nspFolder = null;
+    private String sendFileName = "";
 
     public NSPUSBSender(Activity activity){
         nspCallback = (USBInstallActivity) activity;
         usbManager = (UsbManager)activity.getSystemService(Context.USB_SERVICE);
         usbPermissionIntent =  PendingIntent.getBroadcast(activity, 0,
                 new Intent(NSPUSBSender.ACTION_USB_PERMISSION), 0);
-        setNSPDir();
+        setNspFolder();
     }
 
     public void onDestroy(){
@@ -79,10 +80,11 @@ public class NSPUSBSender implements SenderCallback {
         }
     }
 
-    private void setNSPDir(){
+    private void setNspFolder(){
         try{
             String nspPath = Environment.getExternalStorageDirectory().getCanonicalPath()+"/nsp";
-            nspDir = new File(nspPath);
+            log("nsp path is: "+nspPath);
+            nspFolder = new File(nspPath);
         }catch (Exception e){
             log(e.toString());
             e.printStackTrace();
@@ -151,11 +153,11 @@ public class NSPUSBSender implements SenderCallback {
         new Thread(){
             @Override
             public void run(){
-                if(nspDir==null || !nspDir.exists() || nspDir.isFile()){
+                if(nspFolder ==null || !nspFolder.exists() || nspFolder.isFile()){
                     log("the nsp folder doesn't exist or may not be a directory. you should create a folder called 'nsp' in root directory.");
                     return;
                 }
-                sendFileList(nspDir);
+                sendFileList(nspFolder);
             }
         }.start();
     }
@@ -183,7 +185,7 @@ public class NSPUSBSender implements SenderCallback {
         byte[] buffer;
         buffer = "TUL0".getBytes();//header: Tinfoil USB List 0
         switchConnection.bulkTransfer(usbOutPoint,buffer,4,1000);
-        buffer = ByteUtils.int2byte(fileNameLen);//file name length
+        buffer = ByteUtils.int2byteLE(fileNameLen);//file name length
         switchConnection.bulkTransfer(usbOutPoint,buffer,4,1000);
         buffer = new byte[8];//Padding
         switchConnection.bulkTransfer(usbOutPoint,buffer,8,1000);
@@ -201,14 +203,14 @@ public class NSPUSBSender implements SenderCallback {
             log("waiting for switch to response");
             switchConnection.bulkTransfer(usbInPoint,revBuffer,32,0);
             byte[] header = Arrays.copyOfRange(revBuffer,0,4);
-            if ( ! Arrays.equals(header,"TUC0".getBytes())){
+            if ( ! Arrays.equals(header,"TUC0".getBytes())){//Tinfoil USB Command 0
                 continue;
             }
             //byte[] cmdType = Arrays.copyOfRange(revBuffer,4,5);
             byte[] cmdID = Arrays.copyOfRange(revBuffer,8,12);
             //byte[] dateSize = Arrays.copyOfRange(revBuffer,12,20);
 
-            int id = ByteUtils.byteArrayToInt(cmdID);
+            int id = ByteUtils.LEByteArrayToInt(cmdID);
             if( id == 0){
                 nspCallback.setPercent(0);
                 log("the switch send cmd exit so this sending process will exit.");
@@ -227,7 +229,7 @@ public class NSPUSBSender implements SenderCallback {
         byte[] rangeOffset = Arrays.copyOfRange(fileRangeHeader,8,16);
         byte[] nameLen = Arrays.copyOfRange(fileRangeHeader,16,24);
 
-        int len = ByteUtils.byteArrayToInt(nameLen);
+        int len = ByteUtils.LEByteArrayToInt(nameLen);
         byte[] pathBuffer = new byte[len];
         int rtL = switchConnection.bulkTransfer(usbInPoint,pathBuffer,len,1000);
         log("receive file pathBuffer length is "+rtL);
@@ -253,10 +255,15 @@ public class NSPUSBSender implements SenderCallback {
         switchConnection.bulkTransfer(usbOutPoint,buffer,12,1000);
 
         //send file
-        long size = ByteUtils.byteArrayToLong(rangeSize);//size of file's fragment we need to send to switch
-        long offset = ByteUtils.byteArrayToLong(rangeOffset);//offset of file(in bytes) that we should skip
+        long size = ByteUtils.LEByteArrayToLong(rangeSize);//size of file's fragment we need to send to switch
+        long offset = ByteUtils.LEByteArrayToLong(rangeOffset);//offset of file(in bytes) that we should skip
         try{
-            File nsp = new File(new String(pathBuffer));
+            String path = new String(pathBuffer);
+            if(!sendFileName.equals(path)){
+                sendFileName = path;
+                log("sending file: "+path);
+            }
+            File nsp = new File(path);
             if(!nsp.exists()){
                 log("try to send file to switch which was not exist");
                 return;
