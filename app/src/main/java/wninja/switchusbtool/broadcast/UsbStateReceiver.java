@@ -19,7 +19,7 @@ public class UsbStateReceiver extends BroadcastReceiver{
         String action = intent.getAction();
         if(UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)){
             log("new usb device attached");
-            //findDevice();
+            senderCallback.findDevice();
         }else if(UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)){
             log("a usb device detached");
             UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);

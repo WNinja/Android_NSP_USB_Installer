@@ -1,6 +1,5 @@
 package wninja.switchusbtool.Tool;
 
-import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -20,7 +19,6 @@ import java.util.Arrays;
 
 import wninja.switchusbtool.activities.USBInstallActivity;
 import wninja.switchusbtool.interfaces.SenderCallback;
-import wninja.switchusbtool.interfaces.nspActivityCallback;
 import wninja.switchusbtool.utils.ByteUtils;
 import wninja.switchusbtool.utils.FileUtils;
 
@@ -28,6 +26,7 @@ public class USBInstaller implements SenderCallback {
     public static final String ACTION_USB_PERMISSION = "wninja.switchusbtool.USB_PERMISSION";
 
     private PendingIntent usbPermissionIntent;
+    private USBInstallActivity usbActivity;
 
     private UsbManager usbManager;
     private UsbDevice switchDevice;
@@ -35,13 +34,12 @@ public class USBInstaller implements SenderCallback {
     private UsbDeviceConnection switchConnection;
     private UsbEndpoint usbInPoint,usbOutPoint;
 
-    private nspActivityCallback nspCallback;
     private File nspFolder = null;
     private String sendFileName = "";
     private double percent = 0;
 
-    public USBInstaller(Activity activity){
-        nspCallback = (USBInstallActivity) activity;
+    public USBInstaller(USBInstallActivity activity){
+        usbActivity = activity;
         usbManager = (UsbManager)activity.getSystemService(Context.USB_SERVICE);
         usbPermissionIntent =  PendingIntent.getBroadcast(activity, 0,
                 new Intent(USBInstaller.ACTION_USB_PERMISSION), 0);
@@ -56,7 +54,7 @@ public class USBInstaller implements SenderCallback {
                 log("now switch is connecting");
         }else {
             log("now switch is disconnected");
-            nspCallback.setPercent(0);
+            usbActivity.setPercent(0);
         }
     }
 
@@ -69,6 +67,7 @@ public class USBInstaller implements SenderCallback {
         }
     }
 
+    @Override
     public void findDevice(){
         if(switchDevice == null){
             try{
@@ -188,7 +187,7 @@ public class USBInstaller implements SenderCallback {
 
             int id = ByteUtils.LEByteArrayToInt(cmdID);
             if( id == 0){
-                nspCallback.setPercent(0);
+                usbActivity.setPercent(0);
                 log("the switch send cmd exit so this sending process will exit.");
                 break;
             }else if(id == 1){
@@ -203,10 +202,10 @@ public class USBInstaller implements SenderCallback {
 
         byte[] sizeArray = Arrays.copyOfRange(buffer,0,8);
         long rangeSize = ByteUtils.LEByteArrayToLong(sizeArray);
-        log("size of data size we need to send to switch is "+rangeSize);
+        fileLog("size of data size we need to send to switch is "+rangeSize);
 
         long rangeOffset = ByteUtils.LEByteArrayToLong(Arrays.copyOfRange(buffer,8,16));
-        log("offset of file(in bytes) that we should skip is "+rangeOffset);
+        fileLog("offset of file(in bytes) that we should skip is "+rangeOffset);
 
         int nameLen = ByteUtils.LEByteArrayToInt(Arrays.copyOfRange(buffer,16,24));
         buffer = new byte[nameLen];
@@ -248,14 +247,14 @@ public class USBInstaller implements SenderCallback {
                     readSize = (int)(rangeSize - curOff);
 
                 int actualSize = nspStream.read(buffer,0,readSize);
-                log("Actual read size: "+actualSize);
+                fileLog("Actual read size: "+actualSize);
                 if(actualSize<=0){
                     log(nspName +" has been completely sent");
                     break;
                 }
                 int sentSize = switchConnection.bulkTransfer(usbOutPoint,buffer,actualSize,1000);
-                log("Actual sent size: "+sentSize);
-                curOff += readSize;
+                fileLog("Actual sent size: "+sentSize);
+                curOff += sentSize;
             }
             nspStream.close();
             //show percent
@@ -263,11 +262,11 @@ public class USBInstaller implements SenderCallback {
             double p = Math.floor((curOff + rangeOffset)/fileLen);
             if(percent != p){
                 percent = p;
-                nspCallback.setPercent((int)percent);
+                usbActivity.setPercent((int)percent);
                 log("send percent: "+percent);
             }
         }catch (Exception e){
-            log(e.toString());
+            log("send file error");
             e.printStackTrace();
         }
     }
@@ -317,7 +316,9 @@ public class USBInstaller implements SenderCallback {
     @Override
     public void releaseDevice(){
         switchDevice = null;
+        switchConnection.releaseInterface(switchInterface);
         switchInterface = null;
+        switchConnection.close();
         switchConnection = null;
         usbInPoint = null;
         usbOutPoint = null;
@@ -332,7 +333,11 @@ public class USBInstaller implements SenderCallback {
         return (device.getVendorId() == 1406 && device.getProductId() == 12288);
     }
 
+    private void fileLog(String log){
+        usbActivity.fileLog("[USBInstaller]:"+log);
+    }
+
     private void log(String log){
-        nspCallback.showLog("[USBInstaller]:"+log);
+        usbActivity.showLog("[USBInstaller]:"+log);
     }
 }

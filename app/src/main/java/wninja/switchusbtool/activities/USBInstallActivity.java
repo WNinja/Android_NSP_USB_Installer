@@ -109,16 +109,6 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
     }
 
     @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        showLog("on new Intent");
-        UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-        if (device != null && USBInstaller.isSwitch(device)){
-            nspUsbInstaller.setDevice(device);
-        }
-    }
-
-    @Override
     public void onClick(View v) {
         switch(v.getId()){
             case R.id.find:
@@ -168,14 +158,22 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
         unregisterReceiver(usbStateReceiver);
     }
 
+    public void clearLog(){
+        tv.setText(getResources().getString(R.string.log));
+    }
+
     @Override
     public void showLog(String log) {
-        String time = TimeUtils.getTimeString();
         if(tv != null){
             String text = tv.getText().toString()+"\n"+log;
             tv.setText(text);
         }
+        fileLog(log);
+    }
 
+    @Override
+    public void fileLog(String log){
+        String time = TimeUtils.getTimeString();
         if(logFile != null){
             if(!logFile.exists() && !initLog()){
                 return;
