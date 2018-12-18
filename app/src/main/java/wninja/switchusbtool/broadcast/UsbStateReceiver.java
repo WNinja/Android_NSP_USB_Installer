@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
-import wninja.switchusbtool.Tool.NSPUSBSender;
+import wninja.switchusbtool.Tool.USBInstaller;
 import wninja.switchusbtool.interfaces.nspActivityCallback;
 import wninja.switchusbtool.interfaces.SenderCallback;
 
@@ -23,7 +23,7 @@ public class UsbStateReceiver extends BroadcastReceiver{
         }else if(UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)){
             log("a usb device detached");
             UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-            if (device != null && NSPUSBSender.isSwitch(device)) {
+            if (device != null && USBInstaller.isSwitch(device)) {
                 log("switch disconnected");
                 senderCallback.releaseDevice();
             }

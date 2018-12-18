@@ -16,15 +16,16 @@ import java.io.File;
 import java.io.FileOutputStream;
 
 import wninja.switchusbtool.R;
-import wninja.switchusbtool.Tool.NSPUSBSender;
+import wninja.switchusbtool.Tool.USBInstaller;
 import wninja.switchusbtool.broadcast.SwitchPermissionReceiver;
 import wninja.switchusbtool.broadcast.UsbStateReceiver;
 import wninja.switchusbtool.interfaces.nspActivityCallback;
+import wninja.switchusbtool.utils.TimeUtils;
 
 public class USBInstallActivity extends AppCompatActivity implements View.OnClickListener,nspActivityCallback {
     private static final String TAG = "USBInstallActivity";
 
-    private NSPUSBSender nspUsbSender;
+    private USBInstaller nspUsbInstaller;
 
     private TextView tv;
     private ProgressBar percentBar;
@@ -46,15 +47,15 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void initUsbSender(){
-        nspUsbSender = new NSPUSBSender(this);
+        nspUsbInstaller = new USBInstaller(this);
         //if started by notification when switch attached，get device from intent extra parcel
         Intent intent = getIntent();
         try{
             UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-            if (device != null && NSPUSBSender.isSwitch(device)){
-                nspUsbSender.setDevice(device);
+            if (device != null && USBInstaller.isSwitch(device)){
+                nspUsbInstaller.setDevice(device);
                 showLog("on create we get the switch from intent");
-                nspUsbSender.updateState(true);
+                nspUsbInstaller.updateState(true);
             }
         }catch (Exception e){
             e.printStackTrace();
@@ -62,15 +63,15 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void initBroadCastReceiver(){
-        IntentFilter filter = new IntentFilter(NSPUSBSender.ACTION_USB_PERMISSION);
+        IntentFilter filter = new IntentFilter(USBInstaller.ACTION_USB_PERMISSION);
         registerReceiver(permissionReceiver, filter);
-        permissionReceiver.setCallback(nspUsbSender);
+        permissionReceiver.setCallback(nspUsbInstaller);
         permissionReceiver.setUICallback(this);
 
         IntentFilter filter2 = new IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         filter2.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
         registerReceiver(usbStateReceiver,filter2);
-        usbStateReceiver.setSenderCallback(nspUsbSender);
+        usbStateReceiver.setSenderCallback(nspUsbInstaller);
         usbStateReceiver.setUICallback(this);
     }
 
@@ -112,8 +113,8 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
         super.onNewIntent(intent);
         showLog("on new Intent");
         UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-        if (device != null && NSPUSBSender.isSwitch(device)){
-            nspUsbSender.setDevice(device);
+        if (device != null && USBInstaller.isSwitch(device)){
+            nspUsbInstaller.setDevice(device);
         }
     }
 
@@ -121,10 +122,10 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
     public void onClick(View v) {
         switch(v.getId()){
             case R.id.find:
-                nspUsbSender.findDevice();
+                nspUsbInstaller.findDevice();
                 break;
             case R.id.send:
-                nspUsbSender.sendFile();
+                nspUsbInstaller.sendFile();
                 break;
             default :
                 break;
@@ -162,13 +163,14 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
     @Override
     protected void onDestroy(){
         super.onDestroy();
-        nspUsbSender.onDestroy();
+        nspUsbInstaller.onDestroy();
         unregisterReceiver(permissionReceiver);
         unregisterReceiver(usbStateReceiver);
     }
 
     @Override
     public void showLog(String log) {
+        String time = TimeUtils.getTimeString();
         if(tv != null){
             String text = tv.getText().toString()+"\n"+log;
             tv.setText(text);
@@ -180,7 +182,7 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
             }
             try{
                 FileOutputStream logStream = new FileOutputStream(logFile,true);
-                logStream.write(("\n"+log).getBytes());
+                logStream.write(("["+time+"]"+log+"\n").getBytes());
                 logStream.close();
             }catch (Exception e){
                 e.printStackTrace();

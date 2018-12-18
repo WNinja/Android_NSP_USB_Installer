@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
-import wninja.switchusbtool.Tool.NSPUSBSender;
+import wninja.switchusbtool.Tool.USBInstaller;
 import wninja.switchusbtool.interfaces.nspActivityCallback;
 import wninja.switchusbtool.interfaces.SenderCallback;
 
@@ -18,12 +18,12 @@ public class SwitchPermissionReceiver extends BroadcastReceiver{
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
         log( "onReceive: the action is "+action);
-        if (NSPUSBSender.ACTION_USB_PERMISSION.equals(action)) {
+        if (USBInstaller.ACTION_USB_PERMISSION.equals(action)) {
             synchronized (this) {
                 UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                 if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                     log("get permission");
-                    if(device != null && NSPUSBSender.isSwitch(device)){
+                    if(device != null && USBInstaller.isSwitch(device)){
                         log("get switch after permission");
                         senderCallback.setDevice(device);
                         senderCallback.updateState(true);
