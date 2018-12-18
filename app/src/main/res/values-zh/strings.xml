@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">SwitchTool</string>
+    <string name="app_name">NSP安装器</string>
     <string name="find_device">查找设备</string>
     <string name="send_file">发送文件</string>
     <string name="log">日志:</string>

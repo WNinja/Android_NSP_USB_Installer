@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SwitchTool</string>
+    <string name="app_name">NSPInstaller</string>
     <string name="find_device">Find Device</string>
     <string name="send_file">Send Files</string>
     <string name="log">Log:</string>
