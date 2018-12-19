@@ -264,7 +264,7 @@ public class USBInstaller implements SenderCallback {
             if(percent != p){
                 percent = p;
                 usbActivity.setPercent(percent);
-                log(resources.getString(R.string.percent)+percent);
+                //log(resources.getString(R.string.percent)+percent);
             }
             nspStream.close();
         }catch (Exception e){

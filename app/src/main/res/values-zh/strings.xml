@@ -13,4 +13,13 @@
     <string name="no_folder">nsp文件夹不存在且自动创建失败。请在根目录手动创建nsp文件夹</string>
     <string name="find_nsp">已找到nsp文件：</string>
     <string name="empty_folder">找不到nsp文件，请确认</string>
+    <string name="wait_response">等待switch响应</string>
+    <string name="invalid_response">非法的响应</string>
+    <string name="exit">正在结束</string>
+    <string name="empty_file_name">收到了空文件名</string>
+    <string name="new_file">新的文件：</string>
+    <string name="no_such_file">尝试发送不存在的文件</string>
+    <string name="complete_sent">该文件已发送完毕</string>
+    <string name="percent">发送百分比：</string>
+    <string name="send_error">发送文件时出错</string>
 </resources>
