@@ -4,4 +4,13 @@
     <string name="find_device">查找设备</string>
     <string name="send_file">发送文件</string>
     <string name="log">日志:</string>
+    <string name="switch_connect">switch已连接</string>
+    <string name="switch_disconnect">switch已断开连接</string>
+    <string name="find_switch">检测到switch</string>
+    <string name="cant_find">检测不到已连接的switch</string>
+    <string name="connect_fail">与switch建立连接失败</string>
+    <string name="no_switch">请先连接switch</string>
+    <string name="no_folder">nsp文件夹不存在且自动创建失败。请在根目录手动创建nsp文件夹</string>
+    <string name="find_nsp">已找到nsp文件：</string>
+    <string name="empty_folder">找不到nsp文件，请确认</string>
 </resources>

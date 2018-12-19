@@ -54,7 +54,6 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
             UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
             if (device != null && USBInstaller.isSwitch(device)){
                 nspUsbInstaller.setDevice(device);
-                showLog("on create we get the switch from intent");
                 nspUsbInstaller.updateState(true);
             }
         }catch (Exception e){
@@ -88,7 +87,6 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
         try{
             path = Environment.getExternalStorageDirectory().getCanonicalPath() + "/nsp";
         }catch (Exception e){
-            showLog(e.toString());
             e.printStackTrace();
         }
         File file = new File(path);
@@ -97,13 +95,12 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
             try {
                 created = file.mkdir();
             }catch (Exception e){
-                showLog(e.toString());
                 e.printStackTrace();
             }
             if(!created){
-                showLog("create folder failed");
+                fileLog("create folder failed");
             }else {
-                showLog("create folder success");
+                fileLog("create folder success");
             }
         }
     }
@@ -127,7 +124,6 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
         try{
             path = Environment.getExternalStorageDirectory().getCanonicalPath() + "/nsp/log.txt";
         }catch (Exception e){
-            showLog(e.toString());
             e.printStackTrace();
         }
         File file = new File(path);
@@ -136,14 +132,13 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
             try {
                 created = file.createNewFile();
             }catch (Exception e){
-                showLog(e.toString());
                 e.printStackTrace();
             }
             if(!created){
-                showLog("create log file failed");
+                fileLog("create log file failed");
                 return false;
             }else {
-                showLog("create log file success");
+                fileLog("create log file success");
             }
         }
         logFile = file;

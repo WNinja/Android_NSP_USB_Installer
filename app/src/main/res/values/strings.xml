@@ -3,4 +3,22 @@
     <string name="find_device">Find Device</string>
     <string name="send_file">Send Files</string>
     <string name="log">Log:</string>
+    <string name="switch_connect">now switch is connecting</string>
+    <string name="switch_disconnect">now switch is disconnected</string>
+    <string name="find_switch">find the connecting switch</string>
+    <string name="cant_find">can\'t find switch</string>
+    <string name="connect_fail">connect switch failed</string>
+    <string name="no_switch">No switch connecting!</string>
+    <string name="no_folder">The nsp folder does not exist or may not be a directory.You should create a folder called nsp in root directory.</string>
+    <string name="find_nsp">find one nsp: </string>
+    <string name="empty_folder">nsp folder is empty,have you put the file in it?</string>
+    <string name="wait_response">Start waiting for switch\'s response</string>
+    <string name="invalid_response">Invalid response from switch</string>
+    <string name="exit">now exit.</string>
+    <string name="empty_file_name">Received empty file name</string>
+    <string name="new_file">New file: </string>
+    <string name="no_such_file">Try to send file to switch which was not exist</string>
+    <string name="complete_sent"> has been completely sent</string>
+    <string name="percent">send percent: </string>
+    <string name="send_error">send file error: </string>
 </resources>

@@ -3,6 +3,7 @@ package wninja.switchusbtool.Tool;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
@@ -17,6 +18,7 @@ import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import wninja.switchusbtool.R;
 import wninja.switchusbtool.activities.USBInstallActivity;
 import wninja.switchusbtool.interfaces.SenderCallback;
 import wninja.switchusbtool.utils.ByteUtils;
@@ -27,6 +29,7 @@ public class USBInstaller implements SenderCallback {
 
     private PendingIntent usbPermissionIntent;
     private USBInstallActivity usbActivity;
+    private Resources resources;
 
     private UsbManager usbManager;
     private UsbDevice switchDevice;
@@ -36,10 +39,11 @@ public class USBInstaller implements SenderCallback {
 
     private File nspFolder = null;
     private String sendFileName = "";
-    private double percent = 0;
+    private int percent = 0;
 
     public USBInstaller(USBInstallActivity activity){
         usbActivity = activity;
+        resources = usbActivity.getResources();
         usbManager = (UsbManager)activity.getSystemService(Context.USB_SERVICE);
         usbPermissionIntent =  PendingIntent.getBroadcast(activity, 0,
                 new Intent(USBInstaller.ACTION_USB_PERMISSION), 0);
@@ -51,9 +55,9 @@ public class USBInstaller implements SenderCallback {
     public void updateState(boolean connecting){
         if(connecting){
             if(initConnection())
-                log("now switch is connecting");
+                log(resources.getString(R.string.switch_connect));
         }else {
-            log("now switch is disconnected");
+            log(resources.getString(R.string.switch_disconnect));
             usbActivity.setPercent(0);
         }
     }
@@ -74,7 +78,7 @@ public class USBInstaller implements SenderCallback {
                 for(UsbDevice dev: usbManager.getDeviceList().values()){
                     if (isSwitch(dev)) {
                         switchDevice = dev;
-                        log("from device list ,find the connecting switch device");
+                        log(resources.getString(R.string.find_switch));
                         break;
                     }
                 }
@@ -87,8 +91,10 @@ public class USBInstaller implements SenderCallback {
         if (switchDevice != null && !usbManager.hasPermission(switchDevice)) {
             requestPermission(switchDevice);
         }else {
-            log("can't find switch device");
+            log(resources.getString(R.string.cant_find));
         }
+        /*Random rdm = new Random();
+        usbActivity.setPercent(rdm.nextInt(101));*/
     }
 
     private boolean initConnection(){
@@ -106,7 +112,7 @@ public class USBInstaller implements SenderCallback {
             }
         }
         if(usbInPoint == null || usbOutPoint == null){
-            log("get end point error");
+            log(resources.getString(R.string.connect_fail));
             return false;
         }
         //open USB connection
@@ -115,12 +121,13 @@ public class USBInstaller implements SenderCallback {
             switchConnection = connection;
             return true;
         }
+        log(resources.getString(R.string.connect_fail));
         return false;
     }
 
     public void sendFile(){
         if(switchConnection == null && !initConnection()){
-            log("No switch connecting!");
+            log(resources.getString(R.string.no_switch));
             return;
         }
 
@@ -128,8 +135,7 @@ public class USBInstaller implements SenderCallback {
             @Override
             public void run(){
                 if(nspFolder ==null || !nspFolder.exists() || nspFolder.isFile()){
-                    log("The nsp folder doesn't exist or may not be a directory." +
-                            "You should create a folder called 'nsp' in root directory.");
+                    log(resources.getString(R.string.no_folder));
                     return;
                 }
                 sendFileList(nspFolder);
@@ -147,13 +153,13 @@ public class USBInstaller implements SenderCallback {
                     String fName = f.getName()+ '\n';
                     fileList.add(fName);
                     fileNameLen += fName.length();
-                    log("find one nsp: "+fName);
+                    log(resources.getString(R.string.find_nsp)+fName);
                 }
             }
         }
 
         if(fileList.isEmpty()){
-            log("nsp folder is empty");
+            log(resources.getString(R.string.empty_folder));
             return;
         }
 
@@ -174,12 +180,14 @@ public class USBInstaller implements SenderCallback {
 
     private void pollCommands(){
         byte[] revBuffer = new byte[32];
+        log(resources.getString(R.string.wait_response));
         while (true){
-            log("waiting for switch's command");
             switchConnection.bulkTransfer(usbInPoint,revBuffer,32,0);
             byte[] header = Arrays.copyOfRange(revBuffer,0,4);
-            if ( ! Arrays.equals(header,"TUC0".getBytes()))//Tinfoil USB Command 0
+            if ( ! Arrays.equals(header,"TUC0".getBytes())) {//Tinfoil USB Command 0
+                log(resources.getString(R.string.invalid_response));
                 continue;
+            }
 
             //byte[] cmdType = Arrays.copyOfRange(revBuffer,4,5);
             byte[] cmdID = Arrays.copyOfRange(revBuffer,8,12);
@@ -188,7 +196,7 @@ public class USBInstaller implements SenderCallback {
             int id = ByteUtils.LEByteArrayToInt(cmdID);
             if( id == 0){
                 usbActivity.setPercent(0);
-                log("the switch send cmd exit so this sending process will exit.");
+                log(resources.getString(R.string.exit));
                 break;
             }else if(id == 1){
                 fileRangeSender();
@@ -202,10 +210,7 @@ public class USBInstaller implements SenderCallback {
 
         byte[] sizeArray = Arrays.copyOfRange(buffer,0,8);
         long rangeSize = ByteUtils.LEByteArrayToLong(sizeArray);
-        fileLog("size of data size we need to send to switch is "+rangeSize);
-
         long rangeOffset = ByteUtils.LEByteArrayToLong(Arrays.copyOfRange(buffer,8,16));
-        fileLog("offset of file(in bytes) that we should skip is "+rangeOffset);
 
         int nameLen = ByteUtils.LEByteArrayToInt(Arrays.copyOfRange(buffer,16,24));
         buffer = new byte[nameLen];
@@ -213,25 +218,24 @@ public class USBInstaller implements SenderCallback {
         String nspName = new String(buffer);
         nspName = nspFolder.getAbsolutePath()+"/"+ nspName;
         if("".equals(nspName)){
-            log("Received empty file name");
+            log(resources.getString(R.string.empty_file_name));
             return;
         }else if(!sendFileName.equals(nspName)) {
             sendFileName = nspName;
-            log("New file: "+nspName);
+            log(resources.getString(R.string.new_file)+nspName);
         }
 
         fileRangeHeader(sizeArray);
 
         File nsp = new File(nspName);
         if(!nsp.exists()){
-            log("Try to send file to switch which was not exist");
+            log(resources.getString(R.string.no_such_file));
             return;
         }
         //send file
         FileInputStream nspStream;
         try{
             nspStream = new FileInputStream(nsp);
-            log("Open input stream successfully");
             nspStream.skip(rangeOffset);
 
             long curOff = 0x0;
@@ -247,26 +251,24 @@ public class USBInstaller implements SenderCallback {
                     readSize = (int)(rangeSize - curOff);
 
                 int actualSize = nspStream.read(buffer,0,readSize);
-                fileLog("Actual read size: "+actualSize);
                 if(actualSize<=0){
-                    log(nspName +" has been completely sent");
+                    log(nspName +resources.getString(R.string.complete_sent));
                     break;
                 }
                 int sentSize = switchConnection.bulkTransfer(usbOutPoint,buffer,actualSize,1000);
-                fileLog("Actual sent size: "+sentSize);
                 curOff += sentSize;
             }
-            nspStream.close();
             //show percent
             long fileLen = nsp.length();
-            double p = Math.floor((curOff + rangeOffset)/fileLen);
+            int p = (int)(Math.floor((curOff + rangeOffset)/fileLen));
             if(percent != p){
                 percent = p;
-                usbActivity.setPercent((int)percent);
-                log("send percent: "+percent);
+                usbActivity.setPercent(percent);
+                log(resources.getString(R.string.percent)+percent);
             }
+            nspStream.close();
         }catch (Exception e){
-            log("send file error");
+            log(resources.getString(R.string.send_error)+e.getMessage());
             e.printStackTrace();
         }
     }
@@ -278,7 +280,6 @@ public class USBInstaller implements SenderCallback {
             buffer = "TUC0".getBytes("US-ASCII");//header
             switchConnection.bulkTransfer(usbOutPoint,buffer,4,1000);
         }catch (Exception e){
-            log(e.toString());
             e.printStackTrace();
         }
         buffer = new byte[]{1};//cmd type response
@@ -297,7 +298,6 @@ public class USBInstaller implements SenderCallback {
         if(switchDevice != null){
             //this will show a dialog to user to get the device access permission
             //if user choose yes, our broadcast receiver will receive something
-            log("try request,you will see the dialog");
             usbManager.requestPermission(device, usbPermissionIntent);
         }
     }
