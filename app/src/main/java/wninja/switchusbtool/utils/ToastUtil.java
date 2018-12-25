@@ -42,7 +42,7 @@ public class ToastUtil {
         }
     }
 
-    private static boolean isOnMainThread(){
+    public static boolean isOnMainThread(){
         return Thread.currentThread() == Looper.getMainLooper().getThread();
     }
 }

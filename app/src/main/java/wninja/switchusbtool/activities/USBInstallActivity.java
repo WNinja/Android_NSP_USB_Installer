@@ -6,6 +6,8 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
@@ -14,6 +16,7 @@ import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.lang.ref.WeakReference;
 
 import wninja.switchusbtool.R;
 import wninja.switchusbtool.Tool.USBInstaller;
@@ -21,6 +24,7 @@ import wninja.switchusbtool.broadcast.SwitchPermissionReceiver;
 import wninja.switchusbtool.broadcast.UsbStateReceiver;
 import wninja.switchusbtool.interfaces.nspActivityCallback;
 import wninja.switchusbtool.utils.TimeUtils;
+import wninja.switchusbtool.utils.ToastUtil;
 
 public class USBInstallActivity extends AppCompatActivity implements View.OnClickListener,nspActivityCallback {
     private static final String TAG = "USBInstallActivity";
@@ -34,10 +38,40 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
     private final SwitchPermissionReceiver permissionReceiver = new SwitchPermissionReceiver();
     private final UsbStateReceiver usbStateReceiver = new UsbStateReceiver();
 
+    private mHandler handler;
+
+    private static class mHandler extends Handler{
+        private WeakReference<USBInstallActivity> reference;
+        static final int MSG_LOG = 1;
+        static final int MSG_PERCENT = 2;
+
+        mHandler(USBInstallActivity activity){
+            reference = new WeakReference<>(activity);
+        }
+
+        @Override
+        public void handleMessage(Message msg){
+            USBInstallActivity activity = reference.get();
+            if(activity == null){
+                return;
+            }
+            switch (msg.what){
+                case MSG_LOG:
+                    activity.showLog((String)msg.obj);
+                    break;
+                case MSG_PERCENT:
+                    activity.setPercent((int)msg.obj);
+                    break;
+            }
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_nspinstall);
+
+        handler = new mHandler(this);
 
         createFolder();
         initView();
@@ -159,11 +193,15 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
 
     @Override
     public void showLog(String log) {
-        if(tv != null){
-            String text = tv.getText().toString()+"\n"+log;
-            tv.setText(text);
+        if(ToastUtil.isOnMainThread()){
+            if(tv != null){
+                String text = tv.getText().toString()+"\n"+log;
+                tv.setText(text);
+            }
+            fileLog(log);
+        }else {
+            handler.obtainMessage(mHandler.MSG_PERCENT,log);
         }
-        fileLog(log);
     }
 
     @Override
@@ -185,7 +223,11 @@ public class USBInstallActivity extends AppCompatActivity implements View.OnClic
 
     @Override
     public void setPercent(int percent) {
-        percentBar.setProgress(percent);
+        if(ToastUtil.isOnMainThread()){
+            percentBar.setProgress(percent);
+        }else {
+            handler.obtainMessage(mHandler.MSG_PERCENT,percent);
+        }
     }
 
     /*private void setPercentBarVisibility(boolean visible){

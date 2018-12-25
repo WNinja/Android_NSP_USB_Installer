@@ -215,9 +215,9 @@ public class USBInstaller implements SenderCallback {
         int nameLen = ByteUtils.LEByteArrayToInt(Arrays.copyOfRange(buffer,16,24));
         buffer = new byte[nameLen];
         switchConnection.bulkTransfer(usbInPoint,buffer,nameLen,1000);
-        String nspName = new String(buffer);
+        String nspName = ByteUtils.byteArrayToString(buffer);
         nspName = nspFolder.getAbsolutePath()+"/"+ nspName;
-        if("".equals(nspName)){
+        if(nspName.isEmpty()){
             log(resources.getString(R.string.empty_file_name));
             return;
         }else if(!sendFileName.equals(nspName)) {
@@ -255,7 +255,7 @@ public class USBInstaller implements SenderCallback {
                     log(nspName +resources.getString(R.string.complete_sent));
                     break;
                 }
-                int sentSize = switchConnection.bulkTransfer(usbOutPoint,buffer,actualSize,1000);
+                int sentSize = switchConnection.bulkTransfer(usbOutPoint,buffer,actualSize,5000);
                 curOff += sentSize;
             }
             //show percent
@@ -275,13 +275,8 @@ public class USBInstaller implements SenderCallback {
 
     private void fileRangeHeader(byte[] rangeSize){
         //send response header
-        byte[] buffer;
-        try{
-            buffer = "TUC0".getBytes("US-ASCII");//header
-            switchConnection.bulkTransfer(usbOutPoint,buffer,4,1000);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
+        byte[] buffer = "TUC0".getBytes();//header
+        switchConnection.bulkTransfer(usbOutPoint,buffer,4,1000);
         buffer = new byte[]{1};//cmd type response
         switchConnection.bulkTransfer(usbOutPoint,buffer,1,1000);
         buffer = new byte[3];//Padding

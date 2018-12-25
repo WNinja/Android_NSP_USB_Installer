@@ -79,4 +79,20 @@ public class ByteUtils {
         return values;
     }
 
+    /*public static String other(byte[] b){
+        Charset cs = Charset.forName("US-ASCII");
+        ByteBuffer bb = ByteBuffer.allocate(b.length);
+        bb.put(b);
+        bb.flip();
+        CharBuffer cb = cs.decode(bb);
+        return cb.toString();
+    }*/
+
+    public static String byteArrayToString(byte[] b){
+        char[] c = new char[b.length];
+        for(int i=0;i<b.length;i++){
+            c[i] = (char)(b[i]&0xFF);
+        }
+        return String.valueOf(c);
+    }
 }
